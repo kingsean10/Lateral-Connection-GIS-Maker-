@@ -83,12 +83,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check file size (limit to 50MB for Vercel Pro plan)
+    // Check file size (limit to 48MB to account for FormData overhead)
+    // Vercel Pro plan has 50MB limit for total request body, FormData adds overhead
     if (file) {
-      const maxSize = 50 * 1024 * 1024; // 50MB
+      const maxSize = 48 * 1024 * 1024; // 48MB (accounts for FormData overhead)
       if (file.size > maxSize) {
         return NextResponse.json(
-          { error: `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.` },
+          { error: `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum file size is 48MB to account for upload overhead.` },
           { status: 400 }
         );
       }

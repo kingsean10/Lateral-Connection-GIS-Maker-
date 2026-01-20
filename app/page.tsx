@@ -49,11 +49,12 @@ export default function Home() {
       throw new Error('No file selected');
     }
 
-    // Check file size - Vercel Pro plan has a 50MB limit
-    const maxSize = 50 * 1024 * 1024; // 50MB (Vercel Pro plan limit)
+    // Check file size - Vercel Pro plan has a 50MB limit for request body
+    // FormData encoding adds overhead, so we limit files to 48MB to account for this
+    const maxSize = 48 * 1024 * 1024; // 48MB (accounts for FormData overhead, Vercel limit is 50MB total)
     
     if (file.size > maxSize) {
-      throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.`);
+      throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum file size is 48MB to account for upload overhead.`);
     }
 
     const formData = new FormData();
@@ -71,7 +72,8 @@ export default function Home() {
         if (response.status === 413) {
           throw new Error(
             `File is too large for upload (${(file.size / 1024 / 1024).toFixed(2)}MB). ` +
-            `Maximum file size is 50MB on Vercel Pro plan. Please reduce file size.`
+            `The total request size exceeds Vercel's 50MB limit (file + upload overhead). ` +
+            `Please reduce file size to under 48MB.`
           );
         }
         
@@ -128,10 +130,11 @@ export default function Home() {
   };
 
   const handleMDBUpload = async (file: File) => {
-    // Check file size - Vercel Pro plan has a 50MB limit
-    const maxSize = 50 * 1024 * 1024; // 50MB (Vercel Pro plan limit)
+    // Check file size - Vercel Pro plan has a 50MB limit for request body
+    // FormData encoding adds overhead, so we limit files to 48MB to account for this
+    const maxSize = 48 * 1024 * 1024; // 48MB (accounts for FormData overhead, Vercel limit is 50MB total)
     if (file.size > maxSize) {
-      throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.`);
+      throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum file size is 48MB to account for upload overhead.`);
     }
     
     const formData = new FormData();
@@ -160,7 +163,8 @@ export default function Home() {
         if (response.status === 413) {
           throw new Error(
             `File is too large for upload (${(file.size / 1024 / 1024).toFixed(2)}MB). ` +
-            `Maximum file size is 50MB on Vercel Pro plan. Please reduce file size.`
+            `The total request size exceeds Vercel's 50MB limit (file + upload overhead). ` +
+            `Please reduce file size to under 48MB.`
           );
         }
         
