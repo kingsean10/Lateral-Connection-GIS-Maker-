@@ -75,41 +75,42 @@ export default function Home() {
           );
         }
         
-        // Try to parse JSON error, but handle non-JSON responses
+        // Try to parse error response - read as text first to handle both JSON and HTML
         let errorText = '';
         let error;
         try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            error = await response.json();
-          } else {
-            // Response is not JSON (likely HTML error page)
-            errorText = await response.text();
-            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          errorText = await response.text();
+          // Try to parse as JSON
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            // Not JSON, use text as error message
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
           }
         } catch (parseError) {
-          // Response is not JSON (likely HTML error page)
-          if (errorText) {
-            throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+          // If we already threw an error with the text, re-throw it
+          if (parseError instanceof Error && parseError.message.includes('Upload failed')) {
+            throw parseError;
           }
+          // Otherwise, use generic error
           throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
         }
-        throw new Error(error.error || `Upload failed: ${response.statusText}`);
+        throw new Error(error?.error || error?.message || `Upload failed: ${response.statusText}`);
       }
 
-      // Parse successful response
+      // Parse successful response - read as text first to handle edge cases
       let data;
       try {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          data = await response.json();
-        } else {
-          // Response is not JSON - this shouldn't happen but handle it
-          const text = await response.text();
-          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        const responseText = await response.text();
+        // Try to parse as JSON
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          // Response is not valid JSON
+          throw new Error(`Server returned invalid JSON. Response: ${responseText.substring(0, 200)}`);
         }
       } catch (parseError) {
-        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+        if (parseError instanceof Error) {
           throw parseError;
         }
         throw new Error(`Failed to parse server response. The server may have returned an error page.`);
@@ -163,41 +164,42 @@ export default function Home() {
           );
         }
         
-        // Try to parse JSON error, but handle non-JSON responses
+        // Try to parse error response - read as text first to handle both JSON and HTML
         let errorText = '';
         let error;
         try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            error = await response.json();
-          } else {
-            // Response is not JSON (likely HTML error page)
-            errorText = await response.text();
-            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          errorText = await response.text();
+          // Try to parse as JSON
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            // Not JSON, use text as error message
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
           }
         } catch (parseError) {
-          // Response is not JSON (likely HTML error page)
-          if (errorText) {
-            throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+          // If we already threw an error with the text, re-throw it
+          if (parseError instanceof Error && parseError.message.includes('Upload failed')) {
+            throw parseError;
           }
+          // Otherwise, use generic error
           throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
         }
-        throw new Error(error.error || error.details || 'Failed to upload inspection data');
+        throw new Error(error?.error || error?.details || `Upload failed: ${response.statusText}`);
       }
 
-      // Parse successful response
+      // Parse successful response - read as text first to handle edge cases
       let data;
       try {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          data = await response.json();
-        } else {
-          // Response is not JSON - this shouldn't happen but handle it
-          const text = await response.text();
-          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        const responseText = await response.text();
+        // Try to parse as JSON
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          // Response is not valid JSON
+          throw new Error(`Server returned invalid JSON. Response: ${responseText.substring(0, 200)}`);
         }
       } catch (parseError) {
-        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+        if (parseError instanceof Error) {
           throw parseError;
         }
         throw new Error(`Failed to parse server response. The server may have returned an error page.`);
@@ -308,41 +310,42 @@ export default function Home() {
           );
         }
         
-        // Try to parse JSON error, but handle non-JSON responses
+        // Try to parse error response - read as text first to handle both JSON and HTML
         let errorText = '';
         let error;
         try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            error = await response.json();
-          } else {
-            // Response is not JSON (likely HTML error page)
-            errorText = await response.text();
-            throw new Error(`Processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          errorText = await response.text();
+          // Try to parse as JSON
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            // Not JSON, use text as error message
+            throw new Error(`Processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 200)}`);
           }
         } catch (parseError) {
-          // Response is not JSON (likely HTML error page)
-          if (errorText) {
-            throw new Error(`Processing failed: ${response.status} ${response.statusText}. Payload may be too large.`);
+          // If we already threw an error with the text, re-throw it
+          if (parseError instanceof Error && parseError.message.includes('Processing failed')) {
+            throw parseError;
           }
+          // Otherwise, use generic error
           throw new Error(`Processing failed: ${response.status} ${response.statusText}. Payload may be too large.`);
         }
-        throw new Error(error.error || 'Failed to process data');
+        throw new Error(error?.error || 'Failed to process data');
       }
 
-      // Parse successful response
+      // Parse successful response - read as text first to handle edge cases
       let data;
       try {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          data = await response.json();
-        } else {
-          // Response is not JSON - this shouldn't happen but handle it
-          const text = await response.text();
-          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        const responseText = await response.text();
+        // Try to parse as JSON
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          // Response is not valid JSON
+          throw new Error(`Server returned invalid JSON. Response: ${responseText.substring(0, 200)}`);
         }
       } catch (parseError) {
-        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+        if (parseError instanceof Error) {
           throw parseError;
         }
         throw new Error(`Failed to parse server response. The server may have returned an error page.`);
