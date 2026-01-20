@@ -105,6 +105,21 @@ Clock positions are converted to bearings:
 - 6 = South (180°)
 - 9 = West (270°)
 
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on deploying to GitHub and Vercel.
+
+### Quick Deploy to Vercel
+
+1. Push your code to GitHub (see DEPLOYMENT.md)
+2. Sign up at [vercel.com](https://vercel.com) with your GitHub account
+3. Import your GitHub repository
+4. Add environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_MAPBOX_TOKEN` (your Mapbox public token)
+5. Click Deploy!
+
+Vercel will automatically deploy your app and provide a live URL.
+
 ## License
 
 MIT
