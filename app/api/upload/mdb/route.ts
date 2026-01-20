@@ -10,6 +10,9 @@ import Papa from 'papaparse';
 
 const execFileAsync = promisify(execFile);
 
+// Note: Vercel body size limits:
+// - Pro/Enterprise plan: 50MB (configured)
+// These limits cannot be configured and apply to the entire request body.
 export const runtime = 'nodejs'; // IMPORTANT: needs Node runtime (not edge)
 
 function runMdbExport(mdbPath: string, table: string): Promise<string> {
@@ -78,6 +81,17 @@ export async function POST(req: NextRequest) {
         { error: 'No file or JSON data provided' },
         { status: 400 }
       );
+    }
+
+    // Check file size (limit to 50MB for Vercel Pro plan)
+    if (file) {
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.` },
+          { status: 400 }
+        );
+      }
     }
 
     let inspections: InspectionRecord[] = [];

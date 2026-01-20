@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseGeoJSON, validateGeoJSON } from '@/lib/parsers/geojsonParser';
 
-// Increase body size limit for large GeoJSON files
+// Note: Vercel body size limits:
+// - Pro/Enterprise plan: 50MB (configured)
+// These limits cannot be configured and apply to the entire request body.
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {

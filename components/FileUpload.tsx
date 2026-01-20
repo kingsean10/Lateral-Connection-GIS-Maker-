@@ -40,7 +40,15 @@ export default function FileUpload({
         onSuccess(result);
       }
     } catch (error) {
-      const errorMessage = (error as Error).message || 'Upload failed';
+      let errorMessage = 'Upload failed';
+      
+      // Handle JSON parsing errors specifically
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        errorMessage = 'Server returned an invalid response. This may indicate the file is too large or the server encountered an error.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       console.error('File upload error:', error);
       if (onError) {
         onError(errorMessage);

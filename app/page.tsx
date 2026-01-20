@@ -49,8 +49,9 @@ export default function Home() {
       throw new Error('No file selected');
     }
 
-    // Check file size
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Check file size - Vercel Pro plan has a 50MB limit
+    const maxSize = 50 * 1024 * 1024; // 50MB (Vercel Pro plan limit)
+    
     if (file.size > maxSize) {
       throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.`);
     }
@@ -64,12 +65,56 @@ export default function Home() {
         body: formData,
       });
 
+      // Check response status first
       if (!response.ok) {
-        const error = await response.json();
+        // Handle 413 Payload Too Large error
+        if (response.status === 413) {
+          throw new Error(
+            `File is too large for upload (${(file.size / 1024 / 1024).toFixed(2)}MB). ` +
+            `Maximum file size is 50MB on Vercel Pro plan. Please reduce file size.`
+          );
+        }
+        
+        // Try to parse JSON error, but handle non-JSON responses
+        let errorText = '';
+        let error;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            error = await response.json();
+          } else {
+            // Response is not JSON (likely HTML error page)
+            errorText = await response.text();
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          }
+        } catch (parseError) {
+          // Response is not JSON (likely HTML error page)
+          if (errorText) {
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+          }
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+        }
         throw new Error(error.error || `Upload failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      // Parse successful response
+      let data;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          // Response is not JSON - this shouldn't happen but handle it
+          const text = await response.text();
+          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        }
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+          throw parseError;
+        }
+        throw new Error(`Failed to parse server response. The server may have returned an error page.`);
+      }
+      
       setAssets(data.assets);
       setError(null);
       return data;
@@ -82,6 +127,12 @@ export default function Home() {
   };
 
   const handleMDBUpload = async (file: File) => {
+    // Check file size - Vercel Pro plan has a 50MB limit
+    const maxSize = 50 * 1024 * 1024; // 50MB (Vercel Pro plan limit)
+    if (file.size > maxSize) {
+      throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 50MB.`);
+    }
+    
     const formData = new FormData();
     
     if (file.name.toLowerCase().endsWith('.json')) {
@@ -96,54 +147,104 @@ export default function Home() {
       throw new Error('File must be an MDB, ACCDB, or JSON file');
     }
 
-    const response = await fetch('/api/upload/mdb', {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      const response = await fetch('/api/upload/mdb', {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || error.details || 'Failed to upload inspection data');
-    }
-
-    const data = await response.json();
-    setInspections(data.inspections || []);
-    setDefects(data.defects || []);
-    
-    if (data.inspections && data.inspections.length === 0) {
-      let errorMsg = 'No inspections extracted from MDB file. ';
-      if (data.inspectionColumns && data.inspectionColumns.length > 0) {
-        errorMsg += `Found ${data.rawInspections?.length || 0} rows in PACP_Inspections table. `;
-        errorMsg += `Table columns: ${data.inspectionColumns.slice(0, 10).join(', ')}${data.inspectionColumns.length > 10 ? '...' : ''}. `;
-        if (data.fields) {
-          errorMsg += `Detected fields: ${JSON.stringify(data.fields)}. `;
+      // Check response status first
+      if (!response.ok) {
+        // Handle 413 Payload Too Large error
+        if (response.status === 413) {
+          throw new Error(
+            `File is too large for upload (${(file.size / 1024 / 1024).toFixed(2)}MB). ` +
+            `Maximum file size is 50MB on Vercel Pro plan. Please reduce file size.`
+          );
         }
-        errorMsg += 'Check browser console for detailed field mapping.';
-        console.error('MDB Debug Info:', {
-          inspectionColumns: data.inspectionColumns,
-          conditionColumns: data.conditionColumns,
-          fields: data.fields,
-          sampleInspection: data.sampleInspection,
-          sampleCondition: data.sampleCondition,
-        });
-      } else {
-        errorMsg += 'Check that the file contains PACP_Inspections and PACP_Conditions tables with proper column names.';
+        
+        // Try to parse JSON error, but handle non-JSON responses
+        let errorText = '';
+        let error;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            error = await response.json();
+          } else {
+            // Response is not JSON (likely HTML error page)
+            errorText = await response.text();
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          }
+        } catch (parseError) {
+          // Response is not JSON (likely HTML error page)
+          if (errorText) {
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+          }
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}. File may be too large.`);
+        }
+        throw new Error(error.error || error.details || 'Failed to upload inspection data');
       }
-      setError(errorMsg);
-    } else {
-      setError(null);
+
+      // Parse successful response
+      let data;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          // Response is not JSON - this shouldn't happen but handle it
+          const text = await response.text();
+          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        }
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+          throw parseError;
+        }
+        throw new Error(`Failed to parse server response. The server may have returned an error page.`);
+      }
+      setInspections(data.inspections || []);
+      setDefects(data.defects || []);
+      
+      if (data.inspections && data.inspections.length === 0) {
+        let errorMsg = 'No inspections extracted from MDB file. ';
+        if (data.inspectionColumns && data.inspectionColumns.length > 0) {
+          errorMsg += `Found ${data.rawInspections?.length || 0} rows in PACP_Inspections table. `;
+          errorMsg += `Table columns: ${data.inspectionColumns.slice(0, 10).join(', ')}${data.inspectionColumns.length > 10 ? '...' : ''}. `;
+          if (data.fields) {
+            errorMsg += `Detected fields: ${JSON.stringify(data.fields)}. `;
+          }
+          errorMsg += 'Check browser console for detailed field mapping.';
+          console.error('MDB Debug Info:', {
+            inspectionColumns: data.inspectionColumns,
+            conditionColumns: data.conditionColumns,
+            fields: data.fields,
+            sampleInspection: data.sampleInspection,
+            sampleCondition: data.sampleCondition,
+          });
+        } else {
+          errorMsg += 'Check that the file contains PACP_Inspections and PACP_Conditions tables with proper column names.';
+        }
+        setError(errorMsg);
+      } else {
+        setError(null);
+      }
+      
+      console.log('MDB upload result:', {
+        count: data.count,
+        defectCount: data.defectCount,
+        inspectionsCount: data.inspections?.length || 0,
+        defectsCount: data.defects?.length || 0,
+        inspectionColumns: data.inspectionColumns?.slice(0, 10),
+        fields: data.fields,
+      });
+      
+      return data;
+    } catch (err) {
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        throw new Error('Network error. Please check your connection and try again.');
+      }
+      throw err;
     }
-    
-    console.log('MDB upload result:', {
-      count: data.count,
-      defectCount: data.defectCount,
-      inspectionsCount: data.inspections?.length || 0,
-      defectsCount: data.defects?.length || 0,
-      inspectionColumns: data.inspectionColumns?.slice(0, 10),
-      fields: data.fields,
-    });
-    
-    return data;
   };
 
   const handleProcess = async () => {
@@ -197,12 +298,55 @@ export default function Home() {
       
       clearTimeout(timeoutId);
 
+      // Check response status first
       if (!response.ok) {
-        const error = await response.json();
+        // Handle 413 Payload Too Large error
+        if (response.status === 413) {
+          throw new Error(
+            `Data payload is too large for processing. ` +
+            `Maximum payload size is 50MB on Vercel Pro plan. Please process smaller datasets.`
+          );
+        }
+        
+        // Try to parse JSON error, but handle non-JSON responses
+        let errorText = '';
+        let error;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            error = await response.json();
+          } else {
+            // Response is not JSON (likely HTML error page)
+            errorText = await response.text();
+            throw new Error(`Processing failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`);
+          }
+        } catch (parseError) {
+          // Response is not JSON (likely HTML error page)
+          if (errorText) {
+            throw new Error(`Processing failed: ${response.status} ${response.statusText}. Payload may be too large.`);
+          }
+          throw new Error(`Processing failed: ${response.status} ${response.statusText}. Payload may be too large.`);
+        }
         throw new Error(error.error || 'Failed to process data');
       }
 
-      const data = await response.json();
+      // Parse successful response
+      let data;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          // Response is not JSON - this shouldn't happen but handle it
+          const text = await response.text();
+          throw new Error(`Unexpected response format. Expected JSON but got: ${text.substring(0, 100)}`);
+        }
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message.includes('Unexpected response')) {
+          throw parseError;
+        }
+        throw new Error(`Failed to parse server response. The server may have returned an error page.`);
+      }
       setLaterals(data.data.laterals);
       setDefects(data.data.defects || []);
       setProcessingStats(data.stats || null);

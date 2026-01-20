@@ -5,6 +5,9 @@ import { reverseGeocode } from '@/lib/services/geocodingService';
 import { matchInspectionsToAssets } from '@/lib/parsers/mdbParser';
 import { validateCoordinates } from '@/lib/utils/coordinateValidation';
 
+// Note: Vercel body size limits:
+// - Pro/Enterprise plan: 50MB (configured)
+// These limits cannot be configured and apply to the entire request body.
 // Increase timeout for processing (Next.js default is 10s, we need more for geocoding)
 export const maxDuration = 60; // 60 seconds
 
